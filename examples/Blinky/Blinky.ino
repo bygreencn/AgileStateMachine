@@ -3,11 +3,12 @@
 * States and transitions are statically allocated
 */
 
-#include <AgileStateMachine.h>
+#include "AgileStateMachine.h"
 
 #define PREV_BUTTON  	5
-#define NEXT_BUTTON  	0
-#define LED_BLINK 		LED_BUILTIN
+#define NEXT_BUTTON  	4
+#define RESET_BUTTON  6
+#define LED_BLINK 		20
 
 // Let's use an array for change blink time
 uint32_t blinkInterval = 1000;
@@ -24,6 +25,24 @@ bool xNextButton() {
 	return (digitalRead(NEXT_BUTTON) == LOW);
 }
 
+bool xPrevButton() {
+	/*
+	* Since we have defined a minimum run time for states, the button bounces
+	* has no effects on state machine mechanism functioning
+	* (FSM can switch to next state only after min time has passed)
+	*/
+	return (digitalRead(PREV_BUTTON) == LOW);
+}
+
+bool xResetButton() {
+	/*
+	* Since we have defined a minimum run time for states, the button bounces
+	* has no effects on state machine mechanism functioning
+	* (FSM can switch to next state only after min time has passed)
+	*/
+	return (digitalRead(RESET_BUTTON) == LOW);
+}
+
 // Create new Finite State Machine
 StateMachine myFSM;
 
@@ -38,7 +57,18 @@ Transition blinkOffToBlink1(blink1, xNextButton);
 Transition blink1ToBlink2(blink2, xNextButton);
 Transition blink2ToBlink3(blink3, xNextButton);
 Transition blink3ToBlinkOff(blinkOff, xNextButton);     // xNextButton is a callback function
-Transition blink3ToBlinkOff_time(blinkOff, 10000);		    // Go to blinkOff state if active time > 10000 ms
+Transition blink3ToBlinkOff_time(blinkOff, 5000);		    // Go to blinkOff state if active time > 5000 ms
+
+Transition blink1ToBlinkOff1(blinkOff, xPrevButton);
+Transition blink2ToBlink1(blink1, xPrevButton);
+Transition blink3ToBlink2(blink2, xPrevButton);
+Transition blinkOffToBlink3(blink3, xPrevButton);     // xNextButton is a callback function
+
+Transition blink1ToBlinkOff2(blinkOff, xResetButton);
+Transition blink2ToBlinkOff(blinkOff, xResetButton);
+Transition blink3ToBlinkOff2(blinkOff, xResetButton);
+
+
 
 // Blink led. Frequency depends of selected state
 void blink() {
@@ -85,8 +115,17 @@ void setupStateMachine(){
 	blink3.addTransition(blink3ToBlinkOff);
 	blink3.addTransition(blink3ToBlinkOff_time);	// This transition is on state timeout
 
+	blink1.addTransition(blink1ToBlinkOff1);
+	blink2.addTransition(blink2ToBlink1);
+	blink3.addTransition(blink3ToBlink2);
+	blinkOff.addTransition(blinkOffToBlink3);
+
+	blink1.addTransition(blink1ToBlinkOff2);
+	blink2.addTransition(blink2ToBlinkOff);
+	blink3.addTransition(blink3ToBlinkOff2);
+
 	// Start the Machine State
-	myFSM.setInitialState(blinkOff);
+	myFSM.setInitialState(&blinkOff);
 	myFSM.start();
 
 	Serial.print(F("Active state: "));
@@ -97,6 +136,8 @@ void setupStateMachine(){
 
 void setup() {
 	pinMode(NEXT_BUTTON, INPUT_PULLUP);
+	pinMode(PREV_BUTTON, INPUT_PULLUP);
+	pinMode(RESET_BUTTON, INPUT_PULLUP);
 	pinMode(LED_BLINK, OUTPUT);
 
 	delay(1000);
