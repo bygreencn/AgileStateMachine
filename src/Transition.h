@@ -1,7 +1,11 @@
 #ifndef AGILE_TRANSITION_H
 #define AGILE_TRANSITION_H
-#pragma once
+
+#ifdef UNIT_TEST
+uint32_t millis() { return mock_millis; }
+#else
 #include "Arduino.h"
+#endif
 
 class State;
 
@@ -13,20 +17,27 @@ public:
     ~Transition() {}
 
     // Costruttore con riferimento a stato e variabile booleana
-    Transition(State &out, bool &trigger) : m_outState(out), m_trigger_var(&trigger) {}
+    Transition(State &out, bool &trigger) 
+        : m_outState(out), m_trigger_var(&trigger), m_trigger_cb(nullptr), m_timeout(0) {}
 
     // Costruttore con riferimento a stato e callback
-    Transition(State &out, condition_cb trigger) : m_outState(out), m_trigger_cb(trigger) {}
+    Transition(State &out, condition_cb trigger) 
+        : m_outState(out), m_trigger_var(nullptr), m_trigger_cb(trigger), m_timeout(0) {}
 
     // Costruttore con riferimento a stato e timeout
-    Transition(State &out, uint32_t timeout) : m_outState(out), m_timeout(timeout) {}
+    Transition(State &out, uint32_t timeout) 
+        : m_outState(out), m_trigger_var(nullptr), m_trigger_cb(nullptr), m_timeout(timeout) {}
 
     // Costruttore con puntatore (versione originale, se vuoi mantenerla)
-    Transition(State *out, bool &trigger) : m_outState(*out), m_trigger_var(&trigger) {}
+    Transition(State *pout, bool &trigger) 
+        : m_outState(*pout), m_trigger_var(&trigger), m_trigger_cb(nullptr), m_timeout(0) {}
 
-    Transition(State *out, condition_cb trigger) : m_outState(*out), m_trigger_cb(trigger) {}
+    Transition(State *pout, condition_cb trigger) 
+        : m_outState(*pout), m_trigger_var(nullptr), m_trigger_cb(trigger), m_timeout(0) {}
+    
+    Transition(State *pout, uint32_t timeout) 
+        : m_outState(*pout), m_trigger_var(nullptr), m_trigger_cb(nullptr), m_timeout(timeout) {}
 
-    Transition(State *out, uint32_t timeout) : m_outState(*out), m_timeout(timeout) {}
 
     bool trigger(uint32_t enterTime)
     {
@@ -43,12 +54,11 @@ public:
         }
 
         // Trigger su timeout
-        else if (m_timeout > 0)
+        else if (m_timeout >= 0)
         {
-            if (millis() - enterTime >= m_timeout)
-            {
-                return true;
-            }
+            uint32_t current = millis();
+            uint32_t elapsed = (current >= enterTime) ? (current - enterTime) : (UINT32_MAX - enterTime + current + 1);
+            return (elapsed >= m_timeout);
         }
 
         return false;

@@ -5,7 +5,12 @@
 */
 #ifndef AGILE_STATE_MACHINE_H
 #define AGILE_STATE_MACHINE_H
-#include "Arduino.h"
+#ifdef UNIT_TEST
+	uint32_t millis() { return mock_millis; }
+#else
+	#include "Arduino.h"
+#endif
+
 #include "LinkedList.h"
 #include "State.h"
 
@@ -17,7 +22,12 @@ class StateMachine
 public:
 	// Default constructor/destructor
 	StateMachine(){};
-	~StateMachine(){};
+	~StateMachine(){
+		for (State *s = m_states.first(); s != nullptr; s = m_states.next()) {
+			delete s;
+		}
+		m_states.clear();
+	};
 
 	// Add a new state to the list of states
 	template <typename T>

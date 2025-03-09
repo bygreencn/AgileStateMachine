@@ -60,10 +60,19 @@ void State::runActions()
 
 void State::clearActions()
 {
-    for (Action *action = m_actions.first(); action != nullptr; action = m_actions.next())
-    {
-        action->clear();
+    for (Action *a = m_actions.first(); a != nullptr; a = m_actions.next()) {
+        delete a;
     }
+    m_actions.clear();
+}
+
+void State::clearTransitions()
+{
+    for (Transition *tr = m_transitions.first(); tr != nullptr; tr = m_transitions.next())
+    {
+        delete tr;
+    }
+    m_transitions.clear();
 }
 
 uint8_t State::getActions()
@@ -91,7 +100,9 @@ void State::setTimeout(uint32_t _time)
 
 bool State::getTimeout()
 {
-    return (millis() - m_enterTime > m_maxTime);
+    uint32_t current = millis();
+    uint32_t elapsed = (current >= m_enterTime) ? (current - m_enterTime) : (UINT32_MAX - m_enterTime + current + 1);
+    return elapsed > m_maxTime;
 }
 
 void State::resetEnterTime()
