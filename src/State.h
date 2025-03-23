@@ -1,8 +1,12 @@
 #ifndef AGILE_STATE_H
 #define AGILE_STATE_H
-#pragma once
 
+#ifdef UNIT_TEST
+uint32_t millis() { return mock_millis; }
+#else
 #include "Arduino.h"
+#endif
+
 #include "LinkedList.h"
 #include "Action.h"
 #include "Transition.h"
@@ -15,7 +19,11 @@ using state_cb = void (*)();
 class State
 {
 public:
-    ~State() = default;
+    ~State()
+    {
+        clearActions();
+        clearTransitions();
+    };
 
     template <typename T>
     State(T name, uint32_t min, uint32_t max, state_cb enter, state_cb exit, state_cb run)
@@ -44,6 +52,10 @@ public:
     template <typename T>
     State(T name, uint32_t min, state_cb enter, state_cb exit, state_cb run)
         : State(name, min, 0, enter, exit, run) {}
+    
+    template <typename T>
+    State(T name, state_cb enter, state_cb exit)
+        : State(name, 0, 0, enter, exit, nullptr) {}
 
     void setTimeout(uint32_t preset);
     bool getTimeout();
@@ -94,6 +106,7 @@ protected:
     void runActions();
     void clearActions();
     uint8_t getActions();
+    void clearTransitions();
 };
 
 #endif

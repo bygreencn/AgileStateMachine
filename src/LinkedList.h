@@ -1,5 +1,5 @@
-#ifndef LinkedList_hpp
-#define LinkedList_hpp
+#ifndef LINKEDLIST_H
+#define LINKEDLIST_H
 
 template <class T>
 class ListNode {
@@ -58,6 +58,7 @@ template <class T>
 void LinkedList<T>::append(T element)
 {
     ListNode<T>* node = new ListNode<T>(element, tail, nullptr);
+    if (node == nullptr) return;
 
     if (length == 0)
         curr = tail = head = node;
@@ -77,12 +78,16 @@ int LinkedList<T>::size()
 template <class T>
 T LinkedList<T>::getCurrent()
 {
+    if (curr == nullptr)
+        return T();
     return curr->element;
 }
 
 template <class T>
 T LinkedList<T>::first()
 {
+    if (head == nullptr)
+        return T();
     curr = head;
     return head->element;
 }
@@ -97,11 +102,8 @@ T LinkedList<T>::last()
 template <class T>
 T LinkedList<T>::next()
 {
-    if (length == 0)
-        return nullptr;
-
-    if (curr->next == nullptr)
-        return nullptr;
+    if (length == 0 || curr->next == nullptr)
+        return T();
 
     curr = curr->next;
     return curr->element;
@@ -110,11 +112,8 @@ T LinkedList<T>::next()
 template <class T>
 T LinkedList<T>::prev()
 {
-    if (length == 0)
-        return nullptr;
-
-    if (curr->prev != nullptr)
-        return nullptr;
+    if (length == 0 || curr->prev == nullptr)
+        return T();
 
     curr = curr->prev;
     return curr->element;
@@ -123,9 +122,9 @@ T LinkedList<T>::prev()
 template <class T>
 void LinkedList<T>::deleteCurrent()
 {
-    if (length == 0)
+    if (length == 0 || curr == nullptr)
         return;
-    length--;
+
     ListNode<T>* temp = curr;
 
     if (temp->prev != nullptr)
@@ -133,16 +132,23 @@ void LinkedList<T>::deleteCurrent()
     if (temp->next != nullptr)
         temp->next->prev = temp->prev;
 
-    if (length == 0)
-        head = curr = tail = nullptr;
-    else if (curr == head)
-        curr = head = head->next;
-    else if (curr == tail)
-        curr = tail = tail->prev;
+    if (temp->next != nullptr)
+        curr = temp->next;
+    else if (temp->prev != nullptr)
+        curr = temp->prev;
     else
-        curr = curr->prev;
+        curr = nullptr;
+
+    if (temp == head)
+        head = head->next;
+    if (temp == tail)
+        tail = tail->prev;
 
     delete temp;
+    length--;
+
+    if (length == 0)
+        head = curr = tail = nullptr;
 }
 
 template <class T>
@@ -161,4 +167,4 @@ void LinkedList<T>::clear()
     length = 0;
 }
 
-#endif
+#endif // LINKEDLIST_H

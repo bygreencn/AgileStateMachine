@@ -1,8 +1,14 @@
 
 #ifndef AGILE_ACTION_H
 #define AGILE_ACTION_H
+
+#ifdef UNIT_TEST
+uint32_t millis() { return mock_millis; }
+#else
 #include "Arduino.h"
-#pragma once
+#endif
+#include <assert.h>
+
 class State;
 
 class Action
@@ -10,21 +16,23 @@ class Action
 public:
 	enum Type
 	{
-		N,
+		N=0,
 		S,
 		R,
 		L,
 		D,
 		RE,
-		FE
+		FE,
+		TYPE_MAX
 	};
 
-	~Action(){};
+	~Action(){	};
 
-	Action(State *state, uint8_t type, bool *target, uint32_t time = 0)
-		: m_state(state), m_actionType(type), m_actionTarget(target), m_delay(time) {}
+	Action(uint8_t type, bool *target, uint32_t time = 0)
+		: m_actionType(type), m_actionTarget(target), m_delay(time) {
+			assert(target != nullptr);
+		}
 
-	State *getState() const { return m_state; }
 	uint8_t getType() const { return m_actionType; }
 	uint32_t getDelay() const { return m_delay; }
 	bool *getTarget() const { return m_actionTarget; }
@@ -72,7 +80,8 @@ public:
 
 		// Time Limited:
 		// target variable TRUE until the end of the set time (FALSE on state exit)
-		case Type::L:
+		case Type::L: 
+		{
 			if (!m_edge)
 			{
 				*m_actionTarget = true;
@@ -80,28 +89,34 @@ public:
 				m_edge = true;
 			}
 
-			if ((millis() - m_time) > m_delay && m_edge && m_time > 0)
+			uint32_t current_time = millis();
+			uint32_t elapsed = (current_time >= m_time) ? (current_time - m_time) : (UINT32_MAX - m_time + current_time + 1);
+			if (elapsed > m_delay && m_edge && m_time > 0)
 			{
 				*m_actionTarget = false;
 			}
 			break;
+		}
 
 		// Time Delayed:
 		// target variable TRUE after the set time has elapsed (FALSE on state exit)
 		case Type::D:
+    	{
 			if (!m_edge)
 			{
 				m_time = millis();
 				m_edge = true;
 				*m_actionTarget = false;
 			}
-
-			if ((millis() - m_time) > m_delay && m_edge && m_time > 0)
+			uint32_t current_time = millis();
+			uint32_t elapsed = (current_time >= m_time) ? (current_time - m_time) : (UINT32_MAX - m_time + current_time + 1);
+			if ( elapsed > m_delay && m_edge && m_time > 0)
 			{
 				*m_actionTarget = true;
 				m_time = -1; // Action executed
 			}
 			break;
+      	}
 
 		// Rising Edge
 		// target variable TRUE on rising edge
@@ -120,9 +135,7 @@ public:
 protected:
 	int32_t m_time = -1; // Last call time of Action (-1 not called)
 	bool m_edge = false;
-	Action *m_nextAction = nullptr;
 
-	State *m_state = nullptr;
 	uint8_t m_actionType; // The type of action  { 'N', 'S', 'R', 'L', 'D'}
 	bool *m_actionTarget; // The variable wich is affected by action
 	uint32_t m_delay;	  // For L - limited time and D - delayed actions
