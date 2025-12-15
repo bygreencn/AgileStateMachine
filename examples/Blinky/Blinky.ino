@@ -3,7 +3,7 @@
 * States and transitions are statically allocated
 */
 
-#include "AgileStateMachine.h"
+#include <AgileStateMachine.h>
 
 #define PREV_BUTTON  	5
 #define NEXT_BUTTON  	4

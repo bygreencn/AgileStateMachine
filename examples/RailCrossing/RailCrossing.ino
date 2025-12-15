@@ -103,10 +103,12 @@ void setupStateMachine() {
   stWaitTrain  = fsm.addState("Wait Train", onEnter, nullptr, bewareOfTrains);
 
   stGateOpen->addTransition(stMoveDown, inTrainArrive);
-  stGateClose->addTransition(stWaitTrain, inTrainGone);
   stMoveDown->addTransition(stGateClose, MOVE_TIME);
-  stMoveUp->addTransition(stGateOpen, MOVE_TIME);
+  stGateClose->addTransition(stWaitTrain, inTrainGone);
   stWaitTrain->addTransition(stMoveUp, WAIT_FREE_TIME);
+  stWaitTrain->addTransition(stMoveDown, inTrainArrive);
+  stMoveUp->addTransition(stGateOpen, MOVE_TIME);
+  stMoveUp->addTransition(stMoveDown, inTrainArrive);  
 
   /* Set initial state and start the Machine State */
   fsm.setInitialState(stGateOpen);
